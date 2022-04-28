@@ -1,0 +1,251 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <!--
+         A 'parent' preference, which enables/disables child preferences (below)
+         when checked/unchecked.
+    -->
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="Sensor Setting" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="setting_read_storage_image"
+            android:title="Get Image From Storage" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="200"
+            android:inputType="number"
+            android:key="setting_image_width"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Image Width" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="200"
+            android:inputType="number"
+            android:key="setting_image_height"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Image Height" />
+    </com.gingytech.imageanalysis.MyPreferenceCategory>
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="ISP Process" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="setting_image_do_isp1"
+            android:title="ISP" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="setting_image_do_isp2"
+            android:title="ISP2" />
+        </com.gingytech.imageanalysis.MyPreferenceCategory>
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="Storage Setting" >
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_image_saveenrollimg"
+            android:title="Save Enroll Image" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_image_saveauthimg"
+            android:title="Save Auth Image" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_original_saving"
+            android:title="Save Original Image" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_isp1_saving"
+            android:title="Save ISP1 Image" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="setting_bmp_saving"
+            android:title="Save BMP format Image" />
+
+    </com.gingytech.imageanalysis.MyPreferenceCategory>
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="Sensing Area Setting" >
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_image_aimingpoint"
+            android:title="Aiming Point" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="setting_image_aimingpoint"
+            android:key="setting_image_pressarea_adjust"
+            android:title="Press Area Adjustment" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="1"
+            android:inputType="numberDecimal"
+            android:dependency="setting_image_aimingpoint"
+            android:key="setting_image_drawline_width"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Drawline Width" />
+
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="300"
+            android:inputType="number"
+            android:key="setting_image_sensorposition_left"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Position(Left)" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="1000"
+            android:inputType="number"
+            android:key="setting_image_sensorposition_top"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Position(Top)" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="0"
+            android:inputType="number"
+            android:key="setting_image_sensorposition_rotate"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Rotation(0~360)" />
+
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="255"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_color_r"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Area Color R(0~255)" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="255"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_color_g"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Area Color G(0~255)" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="255"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_color_b"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor Area Color B(0~255)" />
+
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="12"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_size"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Sensor PressArea Size(mm)" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_image_rectangle"
+            android:title="Rectangle SensingArea" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:dependency="setting_image_rectangle"
+            android:defaultValue="12"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_width"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="SensingArea Width" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:dependency="setting_image_rectangle"
+            android:defaultValue="12"
+            android:inputType="number"
+            android:key="setting_image_sensingarea_height"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="SensingArea Height" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_high_brightness"
+            android:title="Display HBM Mode" />
+    </com.gingytech.imageanalysis.MyPreferenceCategory>
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="Recognition Setting" >
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="20"
+            android:inputType="number"
+            android:key="setting_image_enrollnum"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Enroll Max Numbers" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_image_enrollqt"
+            android:title="Finger Quality-Enroll" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="20"
+            android:inputType="number"
+            android:key="setting_image_fingerqualityscore"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Finger Quality Score" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_enroll_overlap_all"
+            android:title="Enroll Overlap-All" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="95"
+            android:inputType="number"
+            android:key="setting_enroll_overlapscore_all"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Enroll Overlap-All Score" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="setting_enroll_overlap_last"
+            android:title="Enroll Overlap-Last" />
+        <EditTextPreference
+            android:capitalize="words"
+            android:defaultValue="80"
+            android:inputType="number"
+            android:key="setting_enroll_overlapscore_last"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Enroll Overlap-Last Score" />
+
+    </com.gingytech.imageanalysis.MyPreferenceCategory>
+    <com.gingytech.imageanalysis.MyPreferenceCategory android:title="Display Setting" >
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:enabled="true"
+            android:key="setting_image_screenreverse"
+            android:title="Screen Reverse" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="setting_image_debugtext"
+            android:title="Enable Debug Text" />
+    </com.gingytech.imageanalysis.MyPreferenceCategory>
+
+</PreferenceScreen>

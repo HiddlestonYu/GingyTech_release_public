@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/action_settings" android:title="Setting" android:orderInCategory="100"></item>
+    <item android:id="@+id/action_deltemplate" android:title="Clean Enroll Template" android:orderInCategory="101"></item>
+    <item android:id="@+id/action_makebg" android:title="Start Make BG" android:orderInCategory="102"></item>
+    <item android:id="@+id/action_isp2dbclean" android:title="ISP2 DB Clean" android:orderInCategory="103"></item>
+    <item android:id="@+id/action_otgenable" android:title="OTG Setting" android:orderInCategory="104"></item>
+    <item android:id="@+id/action_about" android:title="About" android:orderInCategory="201"></item>
+    <item android:id="@+id/action_version" android:title="Ver:" android:orderInCategory="202"></item>
+
+</menu>
