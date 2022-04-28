@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,6 +21,8 @@ import com.gingytech.gingyusb.RegTable;
 import com.gingytech.gingyusb.Utils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.wx.wheelview.adapter.ArrayWheelAdapter;
+import com.wx.wheelview.widget.WheelView;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -45,6 +48,7 @@ import android.os.SystemClock;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -59,6 +63,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -79,15 +84,25 @@ public class MainActivity extends Activity {
 	private String           		mSaveRoot;
 	private ImageButton      		mbtnSensingArea;
 	private ToggleButton     		mtbtnLive, mtbtnFpEnroll, mtbtnFpAuth;
+	private Button					mbtnCountClear, mbtnAuthAll;
 	private ImageView        		mfpView, mAuthResView;
 	private ImageView        		mArrowUpView,mArrowDownView,mArrowLeftView,mArrowRightView;
 	private ImageView        		mArrowUpView2,mArrowDownView2,mArrowLeftView2,mArrowRightView2;
 	private ImageView				mRotateRight,mRotateRight2,mRotateLeft,mRotateLeft2;
 	private GridLayout       		mSensingAreaLayout;
-	private TextView         		mtvmsgText, mtvDebug, mtvVerInfo, mtvExtraMsg;
+	private TextView         		mtvmsgText, mtvDebug, mtvVerInfo, mtvExtraMsg, mtvCounter;
 	private Vibrator         		mVibrator;
 	private SharedPreferences		mSharedPref;
 	private Menu             		mMenu;
+	private WheelView mWheelViewPerson, mWheelViewFinger;
+	private String 					mPersonIndex, mFingerIndex;
+	private int 					FRR, FAR;
+	private ArrayList 				fileList;
+	private float 		mnVerifyPass				= 0;
+	private float 		mnVerifyFail				= 0;
+	private int			indexStart = 0, indexEnd = 0;
+	private boolean		isStart = false;
+
 
 	private static Activity		mfa              	= null;
 	private Lock          		mSyncLock        	= null;
@@ -225,6 +240,9 @@ public class MainActivity extends Activity {
 		SetSensingAreaPos();
 		SetSensingAreaSizeAndColor();
 
+		//wheelView Setting
+		wheelViewSetting();
+
 		// 開不開Debug Message
 		if(mbEnableDebugText == true){
 			mtvDebug.setVisibility(View.VISIBLE);
@@ -241,6 +259,9 @@ public class MainActivity extends Activity {
 		mSyncLock = new ReentrantLock();
 
 		HideBar();
+
+		getDirFile();
+
 	}
 
 	@Override
@@ -322,6 +343,20 @@ public class MainActivity extends Activity {
 		mtbtnFpAuth = (ToggleButton)mfa.findViewById(R.id.tbtnFpAuth2);
 		mtbtnFpAuth.setOnClickListener(clickButton);
 
+		mbtnCountClear = (Button)mfa.findViewById(R.id.btnCountClear);
+		mbtnCountClear.setOnClickListener(clickButton);
+
+		mbtnAuthAll = (Button)mfa.findViewById(R.id.btnAuthAll);
+		mbtnAuthAll.setOnClickListener(clickButton);
+
+		fileList = new ArrayList();
+
+		//wheelView
+		mWheelViewPerson = (WheelView)mfa.findViewById(R.id.wheelviewperson);
+		mWheelViewFinger = (WheelView)mfa.findViewById(R.id.wheelviewfinger);
+		mWheelViewPerson.setOnWheelItemSelectedListener(wheelItemSelectedListener);
+		mWheelViewFinger.setOnWheelItemSelectedListener(wheelItemSelectedListener);
+
 		mbtnSensingArea = (ImageButton)mfa.findViewById(R.id.ibtnTouch);
 		mbtnSensingArea.setOnTouchListener(touchButton);
 		mbtnSensingArea.setScaleType(ImageView.ScaleType.MATRIX);
@@ -351,6 +386,7 @@ public class MainActivity extends Activity {
 		mRotateLeft.setOnClickListener(clickRotate);
 		mRotateLeft2.setOnClickListener(clickRotate);
 
+		mtvCounter = (TextView)mfa.findViewById(R.id.tvCounter);
 		mtvmsgText = (TextView)mfa.findViewById(R.id.msgText);
 		mtvmsgText.setText("");
 		mtvDebug = (TextView)mfa.findViewById(R.id.tvDBG);
@@ -632,6 +668,21 @@ public class MainActivity extends Activity {
 						mtbtnLive.setEnabled(true);
 						mtbtnFpEnroll.setEnabled(true);
 					}
+					break;
+				case R.id.btnCountClear:
+//					Log.d(TAG, "onClick mBtnCountClear: " );
+					Toast.makeText(mfa, "Count Clear", Toast.LENGTH_LONG).show();
+					mnVerifyPass = 0;
+					mnVerifyFail = 0;
+					mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail);
+					break;
+				case R.id.btnAuthAll:
+					Log.d(TAG, " btnAuthAll onClick: ");
+					String currentPerson, currentFinger;
+					currentPerson = mWheelViewPerson.getSelectionItem().toString();
+					currentFinger = mWheelViewFinger.getSelectionItem().toString();
+					Log.d(TAG, "btnAuthAll onClick: " + currentPerson + "_" + currentFinger);
+					verifyAll(currentPerson, currentFinger);
 					break;
 				case R.id.mainlayout:
 					HideBar();
@@ -1375,10 +1426,18 @@ public class MainActivity extends Activity {
 					if(nPass==1) {
 						mVibrator.vibrate(50);
 						Log.d(TAG, "PASS !!!");
+						mnVerifyPass ++;
+						FRR =(int) ((mnVerifyFail/(mnVerifyFail + mnVerifyPass))*1000);
+						FRR = FRR/10;
+						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR :" +FRR + "%");
 						mAuthResView.setImageResource(R.drawable.fppass1);
 					} else {
 						mVibrator.vibrate(500);
 						Log.d(TAG, "NG !!!");
+						mnVerifyFail ++;
+						FRR = (int) ((mnVerifyFail/(mnVerifyFail + mnVerifyPass))*1000);
+						FRR = FRR/10;
+						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR :" +FRR + "%");
 						mAuthResView.setImageResource(R.drawable.fpng1);
 					}
 				}else if(nStatus == AUTH_STATUS_NOFINGER) {
@@ -2603,4 +2662,287 @@ public class MainActivity extends Activity {
 			}
 		}
 	};
+
+	private void wheelViewSetting() {
+		mWheelViewPerson.setWheelAdapter(new ArrayWheelAdapter(this));
+		mWheelViewPerson.setSkin(WheelView.Skin.Common);
+		mWheelViewPerson.setWheelData(createPersonDatas());
+
+		mWheelViewFinger.setWheelAdapter(new ArrayWheelAdapter(this)); // 文本数据源
+		mWheelViewFinger.setSkin(WheelView.Skin.Common); // common皮肤
+		mWheelViewFinger.setWheelData(createFingerDatas());  // 数据集合
+	}
+
+	private List<String> createPersonDatas() {
+		String image_path = mSaveRoot + "/RAD verify/" ;
+		File folder = new File(image_path);
+		File[] listOfFiles = folder.listFiles();
+		//ArrayList setting
+		ArraySet filePersonName = null;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+			filePersonName = new ArraySet();
+		}
+		if(folder.exists()){
+			for (File file : listOfFiles) {
+				if (file.isFile()) {
+//				Log.d(TAG, "createPersonDatas: " + file.getName().substring(0, 4));
+					filePersonName.add(file.getName().substring(0, 4));
+				}
+			}
+		}
+		List<String> personList = new ArrayList<String>();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			personList.addAll(filePersonName);
+			personList.add("all");
+		}
+		Log.d(TAG, "createPersonDatas: " + personList);
+		return personList;
+	}
+
+	private List<String> createFingerDatas() {
+		String image_path = mSaveRoot + "/RAD verify/" ;
+		File folder = new File(image_path);
+		File[] listOfFiles = folder.listFiles();
+		//ArrayList setting
+		ArraySet fileFingerID = null;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+			fileFingerID = new ArraySet();
+		}
+		if (folder.exists()){
+			for (File file : listOfFiles) {
+				if (file.isFile()) {
+//				Log.d(TAG, "createFingerDatas: " + file.getName().substring(5, 6));
+					fileFingerID.add(file.getName().substring(5, 6));
+				}
+			}
+		}
+		List<String> fingerList = new ArrayList<String>();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			fingerList.addAll(fileFingerID);
+			fingerList.add("all");
+		}
+		Log.d(TAG, "createFingerDatas: " + fingerList);
+		return fingerList;
+	}
+
+	private WheelView.OnWheelItemSelectedListener wheelItemSelectedListener = new WheelView.OnWheelItemSelectedListener() {
+		@Override
+		public void onItemSelected(int position, Object o) {
+			mPersonIndex = mWheelViewPerson.getSelectionItem().toString();
+			mFingerIndex = mWheelViewFinger.getSelectionItem().toString();
+			Log.d(TAG, "onItemSelected: " + mPersonIndex + "_" + mFingerIndex);
+		}
+	};
+
+	private void getDirFile() {
+		String image_path = mSaveRoot + "/RAD verify/" ;
+		File folder = new File(image_path);
+		File[] listOfFiles = folder.listFiles();
+
+		if (fileList.size()<1){
+			if (folder.exists()) {
+				for (File file : listOfFiles) {
+					if (file.isFile()) {
+						fileList.add(file.getName());
+					}
+				}
+			}
+		}
+
+		Log.d(TAG, "before fileList: " + fileList);
+		Collections.sort(fileList);
+		Log.d(TAG, "after fileList: " + fileList);
+	}
+
+	private void verifyAll(String currentPerson, String currentFinger) {
+		if (currentPerson == "all" && currentFinger == "all"){
+			indexStart = 0;
+			indexEnd = fileList.size()-1;
+			Log.d(TAG, "verifyAll: indexStart = " + indexStart + " indexEnd " + indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+			threadVerify(indexStart, indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+
+			indexStart = 0;
+			indexEnd = 0;
+
+		}else if (!(currentPerson == "all") && !(currentFinger == "all")){
+			String currentString = currentPerson + "_" + currentFinger;
+			Log.d(TAG, "currentString: " + currentString);
+			for (int i=0; i<fileList.size(); i++){
+				String currentFile = fileList.get(i).toString();
+				if (isStart == false && currentFile.contains(currentString)){
+					indexStart = i;
+					isStart = true;
+				}else if (currentFile.contains(currentString)){
+					indexEnd = i;
+				}
+			}
+			Log.d(TAG, "verifyAll: indexStart = " + indexStart + " indexEnd " + indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+
+			threadVerify(indexStart, indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+			isStart = false;
+			indexStart = 0;
+			indexEnd = 0;
+		}
+	}
+	private void threadVerify(int threadIndexStart, int threadIndexEnd) {
+		LoadBgToMem();
+		SetRootBrightness(true);
+
+
+		Thread verfiAllThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				for (int i= threadIndexStart; i<= threadIndexEnd; i++) {
+
+					try {
+						Thread.currentThread().sleep(50);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					mnReadVerifyPersonIdx = Integer.parseInt(fileList.get(i).toString().substring(0, 4));
+					mnReadVerifyFingerIdx = Integer.parseInt(fileList.get(i).toString().substring(5, 6));
+					mnReadVerifyCaptureIdx = Integer.parseInt(fileList.get(i).toString().substring(7, 10));
+					Log.d(TAG, "Data: " + mnReadVerifyPersonIdx + "_" + mnReadVerifyFingerIdx + "_" + mnReadVerifyCaptureIdx);
+
+					android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY);
+					int nRet = AUTH_STATUS_OK;
+					byte[] imgbuf = null;
+					long lTimeStart = 0;
+
+					boolean bIsTwoByte = mnImgBitCount > 8 ? true : false;
+
+					UpdateLiveImageStatus(null, 0, 0);
+					mSensor.native_bioAuthInit();
+					String strTime = GetDateTimeString();
+					imgbuf = getRaw(bIsTwoByte, STATUS_AUTH);
+
+					byte[] imgorg = imgbuf.clone();
+					byte[] imgisp = null;
+					byte[] imgisp2 = null;
+
+					int []nResultWidth = new int[1];
+					int []nResultHeight = new int[1];
+					int []updateResult = new int[] {0};
+
+					long lTimeStartIsp = SystemClock.uptimeMillis();
+					Isp1(imgbuf, mBg_Normal, mnImgBitCount, nResultWidth, nResultHeight, updateResult);
+					// imgbuf調整成Isp1過後的size
+					byte []validbuf = new byte[nResultWidth[0] * nResultHeight[0]];
+					System.arraycopy(imgbuf, 0, validbuf, 0, nResultWidth[0] * nResultHeight[0]);
+					imgbuf = validbuf;
+					imgisp = imgbuf.clone();
+
+					byte[] byIsp2Db_Normal = mIsp2Db.clone();
+					imgisp2 = imgisp.clone();
+					if(updateResult[0] == 0) {
+//					Log.d(TAG, "isp2 DB update");
+						mSensor.Isp2(imgisp, imgisp2, byIsp2Db_Normal, true, mbDoIsp2);
+						Isp2DbCountIncrease(0);//Auto increasing 1
+						mIsp2Db = byIsp2Db_Normal.clone();
+					} else {
+//					Log.d(TAG, "isp2 DB NOT update");
+						mSensor.Isp2(imgisp, imgisp2, byIsp2Db_Normal, false, mbDoIsp2);
+					}
+
+					long lTimeDiffIsp = SystemClock.uptimeMillis() - lTimeStartIsp;
+
+					int nQuality = mSensor.native_bioImageQuality(imgisp2);
+					float uniformity = mSensor.native_ImageUniformity(imgorg,10,mnImgWidth,mnImgHeight);
+
+					int nFingerID = -1;
+					boolean bIsPass = false;
+					long lAuthTimeBeg = SystemClock.uptimeMillis();
+
+					nRet = mSensor.native_bioAuthenticate(imgisp2);
+					if(nRet > 0) {
+						// match
+						bIsPass = true;
+						nFingerID = nRet;
+						Log.d(TAG, String.format("Auth match FID: %d", nFingerID));
+					} else if(nRet == 0) {
+						Log.d(TAG, "Auth mismatch");
+					} else {
+						Log.e(TAG, "auth fail!");
+					}
+					WriteCSV(nRet);
+
+					final long lPbAuthTimeDiff = SystemClock.uptimeMillis() - lAuthTimeBeg;
+
+					// 實際辨識時間，從取圖到辨識結果產生的時間。
+					final long lAuthTime = SystemClock.uptimeMillis() -lTimeStart;
+
+					// 先將辨識結果顯示至GUI，再進行後續程序
+					UpdateAuthStatus(bIsPass==true?1:0,AUTH_STATUS_OK);
+					UpdateAuthDebugMsg(lAuthTime, nFingerID, nQuality, 0, 0, uniformity, lTimeDiffIsp);
+					UpdateLiveImageStatus(imgisp2, nResultWidth[0], nResultHeight[0]);
+
+					if(mbGetImgFromStorage) {
+						if(mbDoIsp1) {
+							String path = String.format("%s/Gingy verify/%04d_%d_%03d_isp1.bmp", mSaveRoot, mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx - 1);
+							Utils.SaveImage(imgisp, (short)mnIspResultW, (short)mnIspResultH, 8, path, Utils.FORMAT_BMP);
+
+							if(mbDoIsp2) {
+								byte[] isp2data = imgisp2.clone();
+								String image_path = String.format("%s/Gingy verify/%04d_%d_%03d_isp2.bmp", mSaveRoot, mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx - 1);
+
+								Utils.SaveImage(isp2data, (short)mnIspResultW, (short)mnIspResultH, 8, image_path, Utils.FORMAT_BMP);
+							}
+						}
+					} else {
+						if (mbSaveAuthImage) { // DUMP Auth Image
+							String filename = String.format("auth_%d_%s", (bIsPass == true) ? 1 : 0, strTime);
+							SaveImg(imgorg, imgisp, imgisp2, mnImgBitCount, filename, STATUS_AUTH, false);
+						}
+					}
+
+					final long lTimerAuthDiff = SystemClock.uptimeMillis() -lTimeStart;
+					Log.d(TAG, String.format("=== Pb Auth Time: %d ms, Foreground Auth Time: %d ms, Total Auth Time: %d ms ===", lPbAuthTimeDiff, lAuthTime, lTimerAuthDiff));
+
+					UpdateIsp2DB();
+					UpdateDebugMsg("");
+					UpdateAuthStatus(0, AUTH_STATUS_NOFINGER);
+					UpdateLiveImageStatus(null, 0, 0);
+
+					//關閉最大亮度
+					SetRootBrightness(false);
+					Log.d(TAG, "AuthThread Stop: ");
+				}
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						mtbtnFpAuth.setChecked(false);
+//						mtbtnFpAuth.setEnabled(true);
+						mtbtnLive.setEnabled(true);
+						mtbtnFpEnroll.setEnabled(true);
+						Toast.makeText(MainActivity.this, "verify " + (threadIndexEnd-threadIndexStart+1) + " numbers Finish!!!", Toast.LENGTH_LONG).show();
+					}
+				});
+			}
+		});
+		verfiAllThread.start();
+	}
 }

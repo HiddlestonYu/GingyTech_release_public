@@ -1,9 +1,10 @@
 <component name="libraryTable">
   <library name="Gradle: C./Users/raydium/AndroidStudioProjects/GingyTech_release/app/libs/gingyusb-release.aar">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ca99b4f03296251056d40941349e54dd/gingyusb-release/jars/classes.jar!/" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ca99b4f03296251056d40941349e54dd/gingyusb-release/res" />
-      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ca99b4f03296251056d40941349e54dd/gingyusb-release/AndroidManifest.xml" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/fb8f91917a281d9ef43b58a62572ac9a/transformed/gingyusb-release/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-3/fb8f91917a281d9ef43b58a62572ac9a/transformed/gingyusb-release/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/fb8f91917a281d9ef43b58a62572ac9a/transformed/gingyusb-release/res" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -61,5 +61,6 @@
     <orderEntry type="library" name="Gradle: com.android.support:support-core-utils:26.0.2@aar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support:support-core-ui:26.0.2@aar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support:support-compat:26.0.2@aar" level="project" />
+    <orderEntry type="library" name="Gradle: com.wx.wheelview:wheelview:1.3.3@aar" level="project" />
   </component>
 </module>
