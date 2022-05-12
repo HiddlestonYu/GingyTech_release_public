@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -94,14 +95,17 @@ public class MainActivity extends Activity {
 	private Vibrator         		mVibrator;
 	private SharedPreferences		mSharedPref;
 	private Menu             		mMenu;
-	private WheelView mWheelViewPerson, mWheelViewFinger;
+	private WheelView 				mWheelViewPerson, mWheelViewFinger;
 	private String 					mPersonIndex, mFingerIndex;
-	private int 					FRR, FAR;
+	private double 					FRR, FAR;
 	private ArrayList 				fileList;
-	private float 		mnVerifyPass				= 0;
-	private float 		mnVerifyFail				= 0;
-	private int			indexStart = 0, indexEnd = 0;
-	private boolean		isStart = false;
+	private double					FAR_Pass = 0, FRR_Fail = 0;
+	private double 					mnVerifyPass = 0;
+	private double 					mnVerifyFail = 0;
+	private int						indexStart = 0, indexEnd = 0;
+	private boolean					isStart = false;
+	private String					targetFinger = "0016_2";
+	private ArraySet     			FARList, FRRList ;
 
 
 	private static Activity		mfa              	= null;
@@ -196,6 +200,7 @@ public class MainActivity extends Activity {
 	private static final int	STATUS_LIVE               	= 1;
 	private static final int	STATUS_ENROLL             	= 2;
 	private static final int	STATUS_AUTH               	= 3;
+	private DecimalFormat df;
 	// endregion
 
 	@Override
@@ -223,7 +228,6 @@ public class MainActivity extends Activity {
 					Intent intent = new Intent();
 					intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
 					startActivityForResult(intent, 101);
-
 				}
 			}
 		} else {
@@ -261,6 +265,7 @@ public class MainActivity extends Activity {
 		HideBar();
 
 		getDirFile();
+
 
 	}
 
@@ -350,6 +355,15 @@ public class MainActivity extends Activity {
 		mbtnAuthAll.setOnClickListener(clickButton);
 
 		fileList = new ArrayList();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			FARList = new ArraySet();
+		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			FRRList = new ArraySet();
+		}
+
+		df = new DecimalFormat("###.###");
+
 
 		//wheelView
 		mWheelViewPerson = (WheelView)mfa.findViewById(R.id.wheelviewperson);
@@ -403,8 +417,8 @@ public class MainActivity extends Activity {
 		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
 		mbGetImgFromStorage = mSharedPref.getBoolean("setting_read_storage_image", false);
-		mnImgWidth = Integer.parseInt(mSharedPref.getString("setting_image_width", "200"));
-		mnImgHeight = Integer.parseInt(mSharedPref.getString("setting_image_height", "200"));
+		mnImgWidth = Integer.parseInt(mSharedPref.getString("setting_image_width", "150"));
+		mnImgHeight = Integer.parseInt(mSharedPref.getString("setting_image_height", "380"));
 		// 目前ISP後影像寬高與原圖一樣,如果有Resize需求,需要release新的isp library
 		mnIspResultW = mnImgWidth;
 		mnIspResultH = mnImgHeight;
@@ -674,6 +688,8 @@ public class MainActivity extends Activity {
 					Toast.makeText(mfa, "Count Clear", Toast.LENGTH_LONG).show();
 					mnVerifyPass = 0;
 					mnVerifyFail = 0;
+					FAR_Pass = 0;
+					FRR_Fail = 0;
 					mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail);
 					break;
 				case R.id.btnAuthAll:
@@ -1424,20 +1440,43 @@ public class MainActivity extends Activity {
 			public void run() {
 				if(nStatus == AUTH_STATUS_OK) {
 					if(nPass==1) {
+						String image_name = String.format("%04d_%d_%03d", mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx);
+						if (!image_name.contains(targetFinger)){
+							FAR_Pass++;
+							FARList.add(image_name);
+							Log.d(TAG, "Result : FAR_Pass ");
+						}
 						mVibrator.vibrate(50);
 						Log.d(TAG, "PASS !!!");
 						mnVerifyPass ++;
-						FRR =(int) ((mnVerifyFail/(mnVerifyFail + mnVerifyPass))*1000);
-						FRR = FRR/10;
-						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR :" +FRR + "%");
+//						FRR =(int) ((FRR_Fail/(mnVerifyFail + mnVerifyPass))*10000);
+//						FRR = FRR/100;
+						//FAR calculate
+						FAR = (FAR_Pass/(mnVerifyFail + mnVerifyPass));
+						FAR = FAR * 100;
+
+						FRR = (FRR_Fail/(mnVerifyFail + mnVerifyPass));
+						FRR = FRR * 100;
+
+						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR : " +df.format(FRR) + "%" + "  FAR : " + df.format(FAR) + "%");
 						mAuthResView.setImageResource(R.drawable.fppass1);
 					} else {
+						String image_name = String.format("%04d_%d_%03d", mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx);
+						if (image_name.contains(targetFinger)){
+							FRR_Fail++;
+							FRRList.add(image_name);
+							Log.d(TAG, "Result : FRR_Fail ");
+						}
 						mVibrator.vibrate(500);
 						Log.d(TAG, "NG !!!");
+
+						FAR = (FAR_Pass/(mnVerifyFail + mnVerifyPass));
+						FAR = FAR * 100;
+
 						mnVerifyFail ++;
-						FRR = (int) ((mnVerifyFail/(mnVerifyFail + mnVerifyPass))*1000);
-						FRR = FRR/10;
-						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR :" +FRR + "%");
+						FRR = (FRR_Fail/(mnVerifyFail + mnVerifyPass));
+						FRR = FRR * 100;
+						mtvCounter.setText("Pass : " + mnVerifyPass + "Fail : " + mnVerifyFail + " FRR : " +df.format(FRR) + "%" + "  FAR : " + df.format(FAR) + "%");
 						mAuthResView.setImageResource(R.drawable.fpng1);
 					}
 				}else if(nStatus == AUTH_STATUS_NOFINGER) {
@@ -2262,7 +2301,7 @@ public class MainActivity extends Activity {
 			try	{
 				FileWriter fw = new FileWriter(file, true);
 				PrintWriter pw = new PrintWriter(fw, true);
-				pw.println("|        Time         |   finger   | result |");
+				pw.println("Time" + "," +  "Finger" + "," + "Result");
 				pw.close();
 			} catch (IOException e) {
 				System.out.println(e);
@@ -2283,13 +2322,13 @@ public class MainActivity extends Activity {
 			FileWriter fw = new FileWriter(file, true);
 			PrintWriter pw = new PrintWriter(fw, true);
 
-			pw.print("| " + timeString);
-			pw.print(" | " + id);
+//			pw.print(timeString + "," + id + ",");
+//			pw.print(" | " + id);
 			if(nRet > 0) {
-				pw.println(" | " + mIDList.get(nRet) + " |");
+				pw.println(timeString + "," + id + "," + mIDList.get(nRet));
 			}
 			if(nRet == 0) {
-				pw.println(" | unknow |");
+				pw.println(timeString + "," + id + "," + "unknow");
 			}
 			pw.close();
 		} catch (IOException e) {
@@ -2806,12 +2845,43 @@ public class MainActivity extends Activity {
 			isStart = false;
 			indexStart = 0;
 			indexEnd = 0;
+		} else if (!(currentPerson == "all") && (currentFinger == "all")){
+			String currentString = currentPerson + "_" ;
+			Log.d(TAG, "currentString: " + currentString);
+			for (int i=0; i<fileList.size(); i++){
+				String currentFile = fileList.get(i).toString();
+				if (isStart == false && currentFile.contains(currentString)){
+					indexStart = i;
+					isStart = true;
+				}else if (currentFile.contains(currentString)){
+					indexEnd = i;
+				}
+			}
+			Log.d(TAG, "verifyAll: indexStart = " + indexStart + " indexEnd " + indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+
+			threadVerify(indexStart, indexEnd);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mbtnAuthAll.setEnabled(true);
+				}
+			});
+			isStart = false;
+			indexStart = 0;
+			indexEnd = 0;
 		}
 	}
 	private void threadVerify(int threadIndexStart, int threadIndexEnd) {
 		LoadBgToMem();
 		SetRootBrightness(true);
 
+		long autoVerifyStart = System.nanoTime();
 
 		Thread verfiAllThread = new Thread(new Runnable() {
 			@Override
@@ -2819,7 +2889,7 @@ public class MainActivity extends Activity {
 				for (int i= threadIndexStart; i<= threadIndexEnd; i++) {
 
 					try {
-						Thread.currentThread().sleep(50);
+						Thread.currentThread().sleep(5);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -2931,6 +3001,10 @@ public class MainActivity extends Activity {
 					SetRootBrightness(false);
 					Log.d(TAG, "AuthThread Stop: ");
 				}
+				long autoVerifyEnd = System.nanoTime();
+				double timeDiff = (autoVerifyEnd - autoVerifyStart) * 1e-9;
+				DecimalFormat df = new DecimalFormat("###.#####");
+				Log.d(TAG, "Auto Run Time: " + df.format(timeDiff));
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {

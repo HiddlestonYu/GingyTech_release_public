@@ -2,9 +2,10 @@
   <library name="Gradle: com.android.support:support-vector-drawable:26.0.2@aar">
     <CLASSES>
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/16db47d50e5fd3979ccaa5fe2c98fde5/support-vector-drawable-26.0.2/res" />
-      <root url="jar://$USER_HOME$/.gradle/caches/transforms-3/045ff5566715a254ce3bc1ae67a92bfd/transformed/support-vector-drawable-26.0.2/jars/classes.jar!/" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-3/045ff5566715a254ce3bc1ae67a92bfd/transformed/support-vector-drawable-26.0.2/res" />
-      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/045ff5566715a254ce3bc1ae67a92bfd/transformed/support-vector-drawable-26.0.2/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-3/cf7678eb68cb40edc7f36c8f73454f85/transformed/support-vector-drawable-26.0.2/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/cf7678eb68cb40edc7f36c8f73454f85/transformed/support-vector-drawable-26.0.2/AndroidManifest.xml" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/cf7678eb68cb40edc7f36c8f73454f85/transformed/support-vector-drawable-26.0.2/res" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

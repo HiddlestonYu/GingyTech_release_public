@@ -11,7 +11,7 @@
             android:title="Get Image From Storage" />
         <EditTextPreference
             android:capitalize="words"
-            android:defaultValue="200"
+            android:defaultValue="150"
             android:inputType="number"
             android:key="setting_image_width"
             android:maxLines="1"
@@ -20,7 +20,7 @@
             android:title="Image Width" />
         <EditTextPreference
             android:capitalize="words"
-            android:defaultValue="200"
+            android:defaultValue="380"
             android:inputType="number"
             android:key="setting_image_height"
             android:maxLines="1"

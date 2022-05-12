@@ -15,7 +15,7 @@
         android:id="@+id/LinearLayoutBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <ToggleButton
             android:id="@+id/tbtnLive2"
@@ -26,8 +26,20 @@
             android:textOn="Stop"
             android:textSize="20dp" />
 
+        <ToggleButton
+            android:id="@+id/tbnGetLiveFP"
+            android:layout_width="81dp"
+            android:layout_height="60dp"
+            android:layout_alignParentTop="true"
+            android:layout_weight="1"
+            android:text="ToggleButton"
+            android:textColor="#FF33B5E5"
+            android:textOff="Get FP"
+            android:textOn="Stop"
+            android:textSize="20sp" />
+
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="143dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />
 
@@ -49,6 +61,7 @@
             android:textOff="Verify"
             android:textOn="Stop"
             android:textSize="20dp" />
+
     </LinearLayout>
 
     <GridLayout
