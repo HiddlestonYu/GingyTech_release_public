@@ -95,16 +95,16 @@ public class MainActivity extends Activity {
 	private Vibrator         		mVibrator;
 	private SharedPreferences		mSharedPref;
 	private Menu             		mMenu;
-	private WheelView 				mWheelViewPerson, mWheelViewFinger;
+	private WheelView 				mWheelViewPerson, mWheelViewFinger, mWheelViewFRR;
 	private String 					mPersonIndex, mFingerIndex;
 	private double 					FRR, FAR;
-	private ArrayList 				fileList;
+	private ArrayList 				fileVerifyList, fileEnrollList;
 	private double					FAR_Pass = 0, FRR_Fail = 0;
 	private double 					mnVerifyPass = 0;
 	private double 					mnVerifyFail = 0;
 	private int						indexStart = 0, indexEnd = 0;
 	private boolean					isStart = false;
-	private String					targetFinger = "0016_2";
+	private String					targetFinger = "0000_0";
 	private ArraySet     			FARList, FRRList ;
 
 
@@ -201,6 +201,7 @@ public class MainActivity extends Activity {
 	private static final int	STATUS_ENROLL             	= 2;
 	private static final int	STATUS_AUTH               	= 3;
 	private DecimalFormat df;
+	private String currentTime;
 	// endregion
 
 	@Override
@@ -354,7 +355,7 @@ public class MainActivity extends Activity {
 		mbtnAuthAll = (Button)mfa.findViewById(R.id.btnAuthAll);
 		mbtnAuthAll.setOnClickListener(clickButton);
 
-		fileList = new ArrayList();
+		fileVerifyList = new ArrayList();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			FARList = new ArraySet();
 		}
@@ -368,8 +369,10 @@ public class MainActivity extends Activity {
 		//wheelView
 		mWheelViewPerson = (WheelView)mfa.findViewById(R.id.wheelviewperson);
 		mWheelViewFinger = (WheelView)mfa.findViewById(R.id.wheelviewfinger);
-		mWheelViewPerson.setOnWheelItemSelectedListener(wheelItemSelectedListener);
-		mWheelViewFinger.setOnWheelItemSelectedListener(wheelItemSelectedListener);
+		mWheelViewFRR 	 = (WheelView)mfa.findViewById(R.id.wheelviewFRR);
+		mWheelViewPerson.setOnWheelItemSelectedListener(wheelItemSelectedVerifyListener);
+		mWheelViewFinger.setOnWheelItemSelectedListener(wheelItemSelectedVerifyListener);
+		mWheelViewFRR.setOnWheelItemSelectedListener(wheelItemSelectedEnrollListener);
 
 		mbtnSensingArea = (ImageButton)mfa.findViewById(R.id.ibtnTouch);
 		mbtnSensingArea.setOnTouchListener(touchButton);
@@ -471,7 +474,7 @@ public class MainActivity extends Activity {
 				dbfile.delete();
 				IspInit(true);
 			} else {
-				mIsp2Db = Utils.LoadFromFile(mSaveRoot + "/ISBN.db");
+				mIsp2Db = Utils.LoadFromFile(mSaveRoot + "/");
 				if(mIsp2Db == null) {
 					Log.d(TAG, "Load Isp2Db fail, reinitialize.");
 					dbfile.delete();
@@ -683,6 +686,9 @@ public class MainActivity extends Activity {
 						mtbtnFpEnroll.setEnabled(true);
 					}
 					break;
+				case R.id.tbnGetLiveFP:
+					//TODO
+					break;
 				case R.id.btnCountClear:
 //					Log.d(TAG, "onClick mBtnCountClear: " );
 					Toast.makeText(mfa, "Count Clear", Toast.LENGTH_LONG).show();
@@ -698,6 +704,9 @@ public class MainActivity extends Activity {
 					currentPerson = mWheelViewPerson.getSelectionItem().toString();
 					currentFinger = mWheelViewFinger.getSelectionItem().toString();
 					Log.d(TAG, "btnAuthAll onClick: " + currentPerson + "_" + currentFinger);
+					//Log csv setting
+					currentTime = GetDateTimeString();
+					InitialAutoVerifyCSV();
 					verifyAll(currentPerson, currentFinger);
 					break;
 				case R.id.mainlayout:
@@ -2309,6 +2318,21 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	private void InitialAutoVerifyCSV() {
+		String file = mSaveRoot + "/AutoVerify log" + "/" + currentTime +".csv";
+		File f = new File(file);
+		if(!f.exists()) {
+			try	{
+				FileWriter fw = new FileWriter(file, true);
+				PrintWriter pw = new PrintWriter(fw, true);
+				pw.println("Time" + "," +  "Finger" + "," + "Result");
+				pw.close();
+			} catch (IOException e) {
+				System.out.println(e);
+			}
+		}
+	}
+
 	private void WriteCSV(int nRet) {
 		if(!mbGetImgFromStorage) {
 			return;
@@ -2317,6 +2341,33 @@ public class MainActivity extends Activity {
 //		Log.d(TAG, "Time: " + timeString);
 		String id = String.format("%04d_%d_%03d", mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx - 1);
 		String file = mSaveRoot + "/log.csv";
+
+		try	{
+			FileWriter fw = new FileWriter(file, true);
+			PrintWriter pw = new PrintWriter(fw, true);
+
+//			pw.print(timeString + "," + id + ",");
+//			pw.print(" | " + id);
+			if(nRet > 0) {
+				pw.println(timeString + "," + id + "," + mIDList.get(nRet));
+			}
+			if(nRet == 0) {
+				pw.println(timeString + "," + id + "," + "unknow");
+			}
+			pw.close();
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+	}
+
+	private void WriteAutoVerifyCSV(int nRet) {
+		if(!mbGetImgFromStorage) {
+			return;
+		}
+		String timeString = GetDateTimeString();
+//		Log.d(TAG, "Time: " + timeString);
+		String id = String.format("%04d_%d_%03d", mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx - 1);
+		String file = mSaveRoot + "/AutoVerify log" + "/"+ currentTime+".csv";
 
 		try	{
 			FileWriter fw = new FileWriter(file, true);
@@ -2710,6 +2761,10 @@ public class MainActivity extends Activity {
 		mWheelViewFinger.setWheelAdapter(new ArrayWheelAdapter(this)); // 文本数据源
 		mWheelViewFinger.setSkin(WheelView.Skin.Common); // common皮肤
 		mWheelViewFinger.setWheelData(createFingerDatas());  // 数据集合
+
+		mWheelViewFRR.setWheelAdapter(new ArrayWheelAdapter(this)); // 文本数据源
+		mWheelViewFRR.setSkin(WheelView.Skin.Common); // common皮肤
+		mWheelViewFRR.setWheelData(createEnrollDatas());  // 数据集合
 	}
 
 	private List<String> createPersonDatas() {
@@ -2764,7 +2819,32 @@ public class MainActivity extends Activity {
 		return fingerList;
 	}
 
-	private WheelView.OnWheelItemSelectedListener wheelItemSelectedListener = new WheelView.OnWheelItemSelectedListener() {
+	private List<String> createEnrollDatas() {
+		String image_path = mSaveRoot + "/RAD enroll/" ;
+		File folder = new File(image_path);
+		File[] listOfFiles = folder.listFiles();
+		//ArrayList setting
+		ArraySet fileEnrollID = null;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+			fileEnrollID = new ArraySet();
+		}
+		if (folder.exists()){
+			for (File file : listOfFiles) {
+				if (file.isFile()) {
+//				Log.d(TAG, "createFingerDatas: " + file.getName().substring(5, 6));
+					fileEnrollID.add(file.getName().substring(0, 6));
+				}
+			}
+		}
+		List<String> enrollList = new ArrayList<String>();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			enrollList.addAll(fileEnrollID);
+		}
+		Log.d(TAG, "createEnrollDatas: " + enrollList);
+		return enrollList;
+	}
+
+	private WheelView.OnWheelItemSelectedListener wheelItemSelectedVerifyListener = new WheelView.OnWheelItemSelectedListener() {
 		@Override
 		public void onItemSelected(int position, Object o) {
 			mPersonIndex = mWheelViewPerson.getSelectionItem().toString();
@@ -2773,30 +2853,38 @@ public class MainActivity extends Activity {
 		}
 	};
 
+	private WheelView.OnWheelItemSelectedListener wheelItemSelectedEnrollListener = new WheelView.OnWheelItemSelectedListener() {
+		@Override
+		public void onItemSelected(int position, Object o) {
+			targetFinger = mWheelViewFRR.getSelectionItem().toString();
+			Log.d(TAG, "targetFinger: " + targetFinger);
+		}
+	};
+
 	private void getDirFile() {
 		String image_path = mSaveRoot + "/RAD verify/" ;
 		File folder = new File(image_path);
 		File[] listOfFiles = folder.listFiles();
 
-		if (fileList.size()<1){
+		if (fileVerifyList.size()<1){
 			if (folder.exists()) {
 				for (File file : listOfFiles) {
 					if (file.isFile()) {
-						fileList.add(file.getName());
+						fileVerifyList.add(file.getName());
 					}
 				}
 			}
 		}
 
-		Log.d(TAG, "before fileList: " + fileList);
-		Collections.sort(fileList);
-		Log.d(TAG, "after fileList: " + fileList);
+		Log.d(TAG, "before fileVerifyList: " + fileVerifyList);
+		Collections.sort(fileVerifyList);
+		Log.d(TAG, "after fileVerifyList: " + fileVerifyList);
 	}
 
 	private void verifyAll(String currentPerson, String currentFinger) {
 		if (currentPerson == "all" && currentFinger == "all"){
 			indexStart = 0;
-			indexEnd = fileList.size()-1;
+			indexEnd = fileVerifyList.size()-1;
 			Log.d(TAG, "verifyAll: indexStart = " + indexStart + " indexEnd " + indexEnd);
 			runOnUiThread(new Runnable() {
 				@Override
@@ -2818,8 +2906,8 @@ public class MainActivity extends Activity {
 		}else if (!(currentPerson == "all") && !(currentFinger == "all")){
 			String currentString = currentPerson + "_" + currentFinger;
 			Log.d(TAG, "currentString: " + currentString);
-			for (int i=0; i<fileList.size(); i++){
-				String currentFile = fileList.get(i).toString();
+			for (int i=0; i<fileVerifyList.size(); i++){
+				String currentFile = fileVerifyList.get(i).toString();
 				if (isStart == false && currentFile.contains(currentString)){
 					indexStart = i;
 					isStart = true;
@@ -2848,8 +2936,8 @@ public class MainActivity extends Activity {
 		} else if (!(currentPerson == "all") && (currentFinger == "all")){
 			String currentString = currentPerson + "_" ;
 			Log.d(TAG, "currentString: " + currentString);
-			for (int i=0; i<fileList.size(); i++){
-				String currentFile = fileList.get(i).toString();
+			for (int i=0; i<fileVerifyList.size(); i++){
+				String currentFile = fileVerifyList.get(i).toString();
 				if (isStart == false && currentFile.contains(currentString)){
 					indexStart = i;
 					isStart = true;
@@ -2880,7 +2968,7 @@ public class MainActivity extends Activity {
 	private void threadVerify(int threadIndexStart, int threadIndexEnd) {
 		LoadBgToMem();
 		SetRootBrightness(true);
-
+		MakeDir(mSaveRoot + "/AutoVerify log");
 		long autoVerifyStart = System.nanoTime();
 
 		Thread verfiAllThread = new Thread(new Runnable() {
@@ -2893,9 +2981,9 @@ public class MainActivity extends Activity {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					mnReadVerifyPersonIdx = Integer.parseInt(fileList.get(i).toString().substring(0, 4));
-					mnReadVerifyFingerIdx = Integer.parseInt(fileList.get(i).toString().substring(5, 6));
-					mnReadVerifyCaptureIdx = Integer.parseInt(fileList.get(i).toString().substring(7, 10));
+					mnReadVerifyPersonIdx = Integer.parseInt(fileVerifyList.get(i).toString().substring(0, 4));
+					mnReadVerifyFingerIdx = Integer.parseInt(fileVerifyList.get(i).toString().substring(5, 6));
+					mnReadVerifyCaptureIdx = Integer.parseInt(fileVerifyList.get(i).toString().substring(7, 10));
 					Log.d(TAG, "Data: " + mnReadVerifyPersonIdx + "_" + mnReadVerifyFingerIdx + "_" + mnReadVerifyCaptureIdx);
 
 					android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY);
@@ -2931,7 +3019,7 @@ public class MainActivity extends Activity {
 					if(updateResult[0] == 0) {
 //					Log.d(TAG, "isp2 DB update");
 						mSensor.Isp2(imgisp, imgisp2, byIsp2Db_Normal, true, mbDoIsp2);
-						Isp2DbCountIncrease(0);//Auto increasing 1
+//						Isp2DbCountIncrease(0);//Auto increasing 1
 						mIsp2Db = byIsp2Db_Normal.clone();
 					} else {
 //					Log.d(TAG, "isp2 DB NOT update");
@@ -2958,7 +3046,7 @@ public class MainActivity extends Activity {
 					} else {
 						Log.e(TAG, "auth fail!");
 					}
-					WriteCSV(nRet);
+					WriteAutoVerifyCSV(nRet);
 
 					final long lPbAuthTimeDiff = SystemClock.uptimeMillis() - lAuthTimeBeg;
 
