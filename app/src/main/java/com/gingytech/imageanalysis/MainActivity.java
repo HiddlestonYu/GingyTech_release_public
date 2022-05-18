@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
 	private Window           		mWindow;
 	private String           		mSaveRoot;
 	private ImageButton      		mbtnSensingArea;
-	private ToggleButton     		mtbtnLive, mtbtnFpEnroll, mtbtnFpAuth;
+	private ToggleButton     		mtbtnLive, mtbtnFpEnroll, mtbtnFpAuth, mtbtnGetLiveFP;
 	private Button					mbtnCountClear, mbtnAuthAll;
 	private ImageView        		mfpView, mAuthResView;
 	private ImageView        		mArrowUpView,mArrowDownView,mArrowLeftView,mArrowRightView;
@@ -344,6 +344,9 @@ public class MainActivity extends Activity {
 		mtbtnLive = (ToggleButton)mfa.findViewById(R.id.tbtnLive2);
 		mtbtnLive.setOnClickListener(clickButton);
 
+		mtbtnGetLiveFP = (ToggleButton)mfa.findViewById(R.id.tbnGetLiveFP);
+		mtbtnGetLiveFP.setOnClickListener(clickButton);
+
 		mtbtnFpEnroll = (ToggleButton)mfa.findViewById(R.id.tbtnFpEnroll2);
 		mtbtnFpEnroll.setOnClickListener(clickButton);
 		mtbtnFpAuth = (ToggleButton)mfa.findViewById(R.id.tbtnFpAuth2);
@@ -363,7 +366,7 @@ public class MainActivity extends Activity {
 			FRRList = new ArraySet();
 		}
 
-		df = new DecimalFormat("###.###");
+		df = new DecimalFormat("###.#####");
 
 
 		//wheelView
@@ -688,6 +691,11 @@ public class MainActivity extends Activity {
 					break;
 				case R.id.tbnGetLiveFP:
 					//TODO
+					if (mtbtnGetLiveFP.isChecked()){
+						Log.d(TAG, "GetLiveFP click: ");
+					}else{
+						Log.d(TAG, "GetLiveFP unclick: ");
+					}
 					break;
 				case R.id.btnCountClear:
 //					Log.d(TAG, "onClick mBtnCountClear: " );
@@ -2319,13 +2327,26 @@ public class MainActivity extends Activity {
 	}
 
 	private void InitialAutoVerifyCSV() {
-		String file = mSaveRoot + "/AutoVerify log" + "/" + currentTime +".csv";
+		String file = mSaveRoot + "/Auto verify log" + "/" + currentTime +".csv";
 		File f = new File(file);
 		if(!f.exists()) {
 			try	{
 				FileWriter fw = new FileWriter(file, true);
 				PrintWriter pw = new PrintWriter(fw, true);
 				pw.println("Time" + "," +  "Finger" + "," + "Result");
+				pw.close();
+			} catch (IOException e) {
+				System.out.println(e);
+			}
+		}
+
+		String file_info = mSaveRoot + "/Auto verify log" + "/" + currentTime + "_info" +".csv";
+		File file2 = new File(file_info);
+		if(!file2.exists()) {
+			try	{
+				FileWriter fw = new FileWriter(file_info, true);
+				PrintWriter pw = new PrintWriter(fw, true);
+				pw.println("Auto Verify Time" + "," +  "FAR" + "," + "FRR");
 				pw.close();
 			} catch (IOException e) {
 				System.out.println(e);
@@ -2367,7 +2388,7 @@ public class MainActivity extends Activity {
 		String timeString = GetDateTimeString();
 //		Log.d(TAG, "Time: " + timeString);
 		String id = String.format("%04d_%d_%03d", mnReadVerifyPersonIdx, mnReadVerifyFingerIdx, mnReadVerifyCaptureIdx - 1);
-		String file = mSaveRoot + "/AutoVerify log" + "/"+ currentTime+".csv";
+		String file = mSaveRoot + "/Auto verify log" + "/"+ currentTime+".csv";
 
 		try	{
 			FileWriter fw = new FileWriter(file, true);
@@ -2968,7 +2989,7 @@ public class MainActivity extends Activity {
 	private void threadVerify(int threadIndexStart, int threadIndexEnd) {
 		LoadBgToMem();
 		SetRootBrightness(true);
-		MakeDir(mSaveRoot + "/AutoVerify log");
+		MakeDir(mSaveRoot + "/Auto verify log");
 		long autoVerifyStart = System.nanoTime();
 
 		Thread verfiAllThread = new Thread(new Runnable() {
@@ -3093,6 +3114,17 @@ public class MainActivity extends Activity {
 				double timeDiff = (autoVerifyEnd - autoVerifyStart) * 1e-9;
 				DecimalFormat df = new DecimalFormat("###.#####");
 				Log.d(TAG, "Auto Run Time: " + df.format(timeDiff));
+
+				String file = mSaveRoot + "/Auto verify log" + "/"+ currentTime + "_info"+".csv";
+
+				try	{
+					FileWriter fw = new FileWriter(file, true);
+					PrintWriter pw = new PrintWriter(fw, true);
+					pw.println(df.format(timeDiff) + "," + FAR + "%" + "," + FRR + "%");
+					pw.close();
+				} catch (IOException e) {
+					System.out.println(e);
+				}
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
